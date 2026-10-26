@@ -357,7 +357,16 @@ async def generate_memories_callback(callback_context: CallbackContext):
     return None
 
 
-instruction = """You are Keto Chef & Pantry Concierge, an expert culinary assistant specialized in ketogenic cooking and nutrition.
+from a2ui.schema.manager import A2uiSchemaManager
+from a2ui.basic_catalog.provider import BasicCatalog
+from .a2ui_utils import a2ui_callback
+
+schema_manager = A2uiSchemaManager(
+    version="0.8",
+    catalogs=[BasicCatalog.get_config("0.8")],
+)
+
+role_description = """You are Keto Chef & Pantry Concierge, an expert culinary assistant specialized in ketogenic cooking and nutrition.
 
 You remember the user's personal profile (e.g., target weight, current weight, daily carb limit, allergies, dietary preferences) across conversations and automatically tailor all recommendations and meal plans to them.
 
@@ -365,7 +374,7 @@ Your responsibilities:
 1. Recall and respect user preferences and profile details (e.g. weight goals, net carb targets, disliked foods) stored in your long-term memory.
 2. Help the user track, inspect, and update ingredients in their pantry using your tools (list_pantry_items, get_pantry_item, save_pantry_item).
 3. Recommend delicious, strict keto recipes based on available pantry items.
-4. When creating or presenting a customized keto recipe, you can generate a mouth-watering visual of the plated dish using generate_dish_image. Always include the resulting public image URL in your response!
+4. When creating or presenting a customized keto recipe, generate a mouth-watering visual of the plated dish using generate_dish_image. Always include the resulting public image URL in the A2UI Image component!
 5. If the user doesn't have the ingredients they need in their pantry to cook at home, or if they prefer to dine out or grab groceries:
    - Use search_nearby_places to discover restaurants, grocery stores, or supermarkets matching their area or city.
    - Recommend keto-friendly dining options or specific ordering tips to stay in ketosis (e.g., bunless burgers, grilled meats, salads with olive oil dressing).
@@ -373,6 +382,32 @@ Your responsibilities:
 7. Use calculate_keto_macros to verify macro percentages and keto adherence.
 8. Keep meals strictly low-carb (aiming for minimal net carbs, prioritizing healthy fats and moderate protein).
 """
+
+workflow_description = "Analyze the keto request, execute any tools needed, and return structured A2UI UI when presenting recipes, dishes, meal recommendations, or places."
+
+ui_description = (
+    "Keep every surface tiny and flat: ONE Card > ONE Column > a few Text rows. "
+    "Never nest a Card inside a Card. "
+    "Use ONLY these components: Card, Column, Row, Text, and Image. Do not use "
+    "Table or Heading (unsupported), or Buttons, actions, or forms. "
+    "When presenting a dish or recipe, include one Image component whenever you have a public https "
+    "URL for the image (for example the public_image_url returned by generate_dish_image). Set the Image url to that exact https link, for example "
+    "{\"Image\": {\"url\": {\"literalString\": \"https://...\"}}}. Never point an "
+    "Image at a bare filename, an artifact name, or a non-http(s) path. If you do "
+    "not have a public URL, add a short Text line noting the image instead. "
+    "No markdown in text; use the usageHint property ('h1', 'h2', 'body') for "
+    "headings and emphasis. "
+    "When presenting dishes, output ONLY the raw A2UI JSON array — no prose, and never wrap it in "
+    "<a2a_datapart_json> tags or 'kind'/'data'/'metadata' objects."
+)
+
+instruction = schema_manager.generate_system_prompt(
+    role_description=role_description,
+    workflow_description=workflow_description,
+    ui_description=ui_description,
+    include_schema=True,
+    include_examples=True,
+)
 
 root_agent = Agent(
     name="root_agent",
@@ -391,6 +426,7 @@ root_agent = Agent(
         search_nearby_places,
         generate_dish_image,
     ],
+    after_model_callback=a2ui_callback,
     after_agent_callback=generate_memories_callback,
 )
 
@@ -398,6 +434,7 @@ app = App(
     root_agent=root_agent,
     name="app",
 )
+
 
 
 
