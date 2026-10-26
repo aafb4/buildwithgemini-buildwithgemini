@@ -3,55 +3,120 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agent</title>
-<!-- Optional: used only to draw A2UI Icon components. If it can't load (offline/
-     corp network), icons fall back to showing their name as text. -->
+<title>Keto Chef & Pantry Concierge</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined">
 <style>
-  :root { --accent:#1a73e8; --bg:#f6f8fa; --border:#dfe3e8; }
+  :root { --accent:#10b981; --accent-dark:#059669; --bg:#f8fafc; --border:#e2e8f0; --sidebar-bg:#ffffff; }
   * { box-sizing:border-box; }
-  body { margin:0; font-family:system-ui,sans-serif; background:var(--bg); display:flex; flex-direction:column; height:100vh; }
-  header { background:var(--accent); color:#fff; padding:.9rem 1.2rem; font-weight:700; }
-  #log { flex:1; overflow-y:auto; padding:1.2rem; max-width:780px; width:100%; margin:0 auto; }
-  .msg { margin:.6rem 0; }
-  .msg.user { text-align:right; }
-  .bubble { display:inline-block; padding:.6rem .9rem; border-radius:12px; background:#fff; border:1px solid var(--border); text-align:left; max-width:90%; white-space:pre-wrap; }
-  .msg.user .bubble { background:var(--accent); color:#fff; border:none; }
-  /* When the reply is an A2UI card, drop the bubble chrome so the card stands alone. */
-  .bubble.rich { background:transparent; border:none; padding:0; max-width:100%; white-space:normal; }
-  form { display:flex; gap:.5rem; padding:1rem; border-top:1px solid var(--border); background:#fff; }
-  input { flex:1; padding:.7rem; border:1px solid var(--border); border-radius:8px; font-size:1rem; }
-  button { padding:.7rem 1.1rem; border:none; border-radius:8px; background:var(--accent); color:#fff; font-weight:600; cursor:pointer; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); display:flex; height:100vh; overflow:hidden; color:#1e293b; }
+  
+  /* Sidebar */
+  #sidebar { width:320px; background:var(--sidebar-bg); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:1.2rem; gap:1.2rem; flex-shrink:0; }
+  .brand { font-size:1.25rem; font-weight:800; color:var(--accent-dark); display:flex; align-items:center; gap:.5rem; }
+  .pantry-card { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  .pantry-header { font-size:.9rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#64748b; margin-bottom:.6rem; }
+  .pantry-list { flex:1; overflow-y:auto; list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:.4rem; }
+  .pantry-item { padding:.5rem .7rem; border-radius:8px; border:1px solid var(--border); background:#f8fafc; font-size:.85rem; cursor:pointer; display:flex; justify-content:space-between; align-items:center; transition:all 0.15s ease; }
+  .pantry-item:hover { border-color:var(--accent); background:#ecfdf5; transform:translateX(3px); }
+  .pantry-item .badge { font-size:.75rem; background:#e2e8f0; padding:.15rem .4rem; border-radius:4px; color:#475569; }
 
-  /* --- A2UI component styles (Card, Column, Row, Text, Divider, List, Image, Icon) --- */
-  .a2card { border:1px solid var(--border); border-radius:12px; padding:1rem; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.06); max-width:100%; }
-  .a2card + .a2card, .a2col > .a2card { margin-top:.6rem; }
-  .a2col { display:flex; flex-direction:column; gap:.4rem; }
+  /* Ring Chart Widget */
+  .ring-widget { background:#f1f5f9; border-radius:14px; padding:1rem; display:flex; align-items:center; gap:1rem; }
+  .ring-chart { position:relative; width:80px; height:80px; flex-shrink:0; }
+  .ring-chart svg { width:100%; height:100%; transform:rotate(-90deg); }
+  .ring-chart circle { fill:none; stroke-width:8; stroke-linecap:round; }
+  .ring-chart .bg { stroke:#cbd5e1; }
+  .ring-chart .bar { stroke:var(--accent); stroke-dasharray:220; stroke-dashoffset:60; transition:stroke-dashoffset 0.6s ease; }
+  .ring-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:.85rem; font-weight:700; color:#0f172a; }
+  .ring-center span { font-size:.65rem; font-weight:500; color:#64748b; }
+  .ring-info { font-size:.8rem; display:flex; flex-direction:column; gap:.2rem; }
+  .ring-info strong { font-size:.95rem; color:#0f172a; }
+
+  /* Chat Main */
+  #main { flex:1; display:flex; flex-direction:column; height:100vh; }
+  header { background:#fff; border-bottom:1px solid var(--border); padding:.9rem 1.4rem; font-weight:700; font-size:1.05rem; display:flex; align-items:center; justify-content:space-between; }
+  #log { flex:1; overflow-y:auto; padding:1.4rem; max-width:820px; width:100%; margin:0 auto; }
+  .msg { margin:.8rem 0; }
+  .msg.user { text-align:right; }
+  .bubble { display:inline-block; padding:.7rem 1rem; border-radius:14px; background:#fff; border:1px solid var(--border); text-align:left; max-width:88%; white-space:pre-wrap; line-height:1.5; font-size:.95rem; }
+  .msg.user .bubble { background:var(--accent); color:#fff; border:none; border-bottom-right-radius:2px; }
+  .bubble.rich { background:transparent; border:none; padding:0; max-width:100%; white-space:normal; }
+  form { display:flex; gap:.6rem; padding:1rem 1.4rem; border-top:1px solid var(--border); background:#fff; }
+  input { flex:1; padding:.75rem 1rem; border:1px solid var(--border); border-radius:10px; font-size:1rem; outline:none; }
+  input:focus { border-color:var(--accent); }
+  button { padding:.75rem 1.3rem; border:none; border-radius:10px; background:var(--accent); color:#fff; font-weight:600; cursor:pointer; }
+  button:hover { background:var(--accent-dark); }
+
+  /* A2UI Component Styles */
+  .a2card { border:1px solid var(--border); border-radius:14px; padding:1.2rem; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,.04); max-width:100%; }
+  .a2card + .a2card, .a2col > .a2card { margin-top:.8rem; }
+  .a2col { display:flex; flex-direction:column; gap:.5rem; }
   .a2row { display:flex; flex-direction:row; gap:.6rem; align-items:center; flex-wrap:wrap; }
   .a2row.between { justify-content:space-between; }
   .a2text { margin:0; line-height:1.4; }
-  .a2text.a2-h1 { font-size:1.5rem; font-weight:700; }
-  .a2text.a2-h2 { font-size:1.25rem; font-weight:700; }
-  .a2text.a2-h3 { font-size:1.1rem; font-weight:600; }
+  .a2text.a2-h1 { font-size:1.5rem; font-weight:700; color:#0f172a; }
+  .a2text.a2-h2 { font-size:1.25rem; font-weight:700; color:#0f172a; }
+  .a2text.a2-h3 { font-size:1.1rem; font-weight:600; color:#0f172a; }
   .a2text.a2-h4 { font-size:1rem; font-weight:600; }
-  .a2text.a2-caption { font-size:.85rem; color:#666; }
-  .a2divider { border:none; border-top:1px solid var(--border); margin:.4rem 0; width:100%; }
-  .a2img { max-width:100%; border-radius:8px; display:block; }
+  .a2text.a2-caption { font-size:.85rem; color:#64748b; }
+  .a2divider { border:none; border-top:1px solid var(--border); margin:.6rem 0; width:100%; }
+  .a2img { max-width:100%; border-radius:10px; display:block; box-shadow:0 2px 8px rgba(0,0,0,0.08); margin:.5rem 0; }
   .material-symbols-outlined { font-family:'Material Symbols Outlined'; font-size:1.25rem; line-height:1; vertical-align:middle; color:var(--accent); }
 </style>
 </head>
 <body>
-<header>Your Agent</header>
-<div id="log"></div>
-<form id="form">
-  <input id="input" placeholder="Ask something…" autocomplete="off" autofocus>
-  <button>Send</button>
-</form>
+
+<div id="sidebar">
+  <div class="brand">
+    <span class="material-symbols-outlined" style="font-size:1.6rem;">skillet</span>
+    Keto Chef
+  </div>
+
+  <!-- Ring Chart Widget -->
+  <div class="ring-widget">
+    <div class="ring-chart">
+      <svg viewBox="0 0 80 80">
+        <circle class="bg" cx="40" cy="40" r="35"></circle>
+        <circle id="calorieRing" class="bar" cx="40" cy="40" r="35"></circle>
+      </svg>
+      <div class="ring-center">
+        <span id="calorieCount">1,450</span>
+        <span>kcal</span>
+      </div>
+    </div>
+    <div class="ring-info">
+      <strong>Daily Calories</strong>
+      <span style="color:#64748b; font-size:.8rem;">1,450 / 2,000 kcal (72%)</span>
+      <span style="color:#059669; font-weight:600; font-size:.75rem;">18g Net Carbs</span>
+    </div>
+  </div>
+
+  <!-- Pantry Sidebar -->
+  <div class="pantry-card">
+    <div class="pantry-header">My Pantry (Click to add)</div>
+    <ul id="pantryList" class="pantry-list">
+      <li class="pantry-item" style="color:#64748b;">Loading ingredients…</li>
+    </ul>
+  </div>
+</div>
+
+<div id="main">
+  <header>
+    <span>Chat with Keto Concierge</span>
+    <span style="font-size:.85rem; font-weight:normal; color:#64748b;">Powered by Gemini 3.8 & A2A</span>
+  </header>
+  <div id="log"></div>
+  <form id="form">
+    <input id="input" placeholder="Ask what to cook with your pantry, restaurants nearby, or plan macros…" autocomplete="off" autofocus>
+    <button>Send</button>
+  </form>
+</div>
 
 <script>
 const log = document.getElementById("log");
 const form = document.getElementById("form");
 const input = document.getElementById("input");
+const pantryList = document.getElementById("pantryList");
 
 function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 
@@ -62,14 +127,33 @@ function bubble(who) {
   return b;
 }
 
-/* ----------------------------------------------------------------------------
- * A2UI mini-renderer (v0.8 Basic Catalog subset).
- * Renders Card / Column / Row / Text / Divider / List / Image / Icon.
- * Anything else falls back to plain text (see renderReply). All text goes in via
- * textContent and image URLs are validated, so agent output can't inject HTML.
- * -------------------------------------------------------------------------- */
+// Load pantry items and click to insert
+async function loadPantry() {
+  try {
+    const res = await fetch("/api/pantry");
+    const data = await res.json();
+    pantryList.innerHTML = "";
+    if (!data.items || data.items.length === 0) {
+      pantryList.innerHTML = `<li class="pantry-item" style="color:#94a3b8;">No pantry items found</li>`;
+      return;
+    }
+    data.items.forEach(item => {
+      const li = el("li", "pantry-item");
+      li.innerHTML = `<span><strong>${item.name || "Item"}</strong> (${item.quantity || "1"})</span><span class="badge">${item.category || "keto"}</span>`;
+      li.onclick = () => {
+        const cur = input.value.trim();
+        input.value = cur ? `${cur}, ${item.name}` : `I have ${item.name} in my pantry. What can I make?`;
+        input.focus();
+      };
+      pantryList.appendChild(li);
+    });
+  } catch (err) {
+    pantryList.innerHTML = `<li class="pantry-item" style="color:#ef4444;">Failed to load pantry</li>`;
+  }
+}
+loadPantry();
 
-// A "bound value" is usually {literalString: "..."}; we only support literals.
+/* A2UI Mini-Renderer */
 function boundStr(v) {
   if (v == null) return "";
   if (typeof v === "string") return v;
@@ -77,85 +161,75 @@ function boundStr(v) {
   return "";
 }
 
-// child ids of a component's props: single `child` and/or `children.explicitList`.
-function childIds(props) {
+function childIds(c) {
+  if (!c) return [];
   const ids = [];
-  if (props && typeof props.child === "string") ids.push(props.child);
-  const ch = props && props.children;
-  if (ch && Array.isArray(ch.explicitList)) for (const c of ch.explicitList) if (typeof c === "string") ids.push(c);
+  if (c.child) ids.push(c.child);
+  if (c.children && Array.isArray(c.children.explicitList)) ids.push(...c.children.explicitList);
   return ids;
 }
 
-// A2UI icon names are camelCase (locationOn); Material Symbols wants snake_case.
-function iconName(n) { return String(n || "").replace(/([a-z0-9])([A-Z])/g, "$1_$2").replace(/\s+/g, "_").toLowerCase(); }
+function renderTree(id, byId) {
+  const spec = byId.get(id);
+  if (!spec || !spec.component) return null;
+  const c = spec.component;
 
-function buildNode(id, comps, seen) {
-  if (!id || seen.has(id)) return null;   // missing / cycle guard
-  seen.add(id);
-  const spec = comps[id];
-  if (!spec || typeof spec !== "object") return null;
-  const type = Object.keys(spec)[0];
-  const props = spec[type] || {};
-  const kids = () => childIds(props).map(cid => buildNode(cid, comps, seen)).filter(Boolean);
-
-  switch (type) {
-    case "Card": {
-      const d = el("div", "a2card"); kids().forEach(n => d.appendChild(n)); return d;
-    }
-    case "Column":
-    case "List": {
-      const horizontal = type === "List" && props.direction === "horizontal";
-      const d = el("div", horizontal ? "a2row" : "a2col"); kids().forEach(n => d.appendChild(n)); return d;
-    }
-    case "Row": {
-      const d = el("div", "a2row" + (props.distribution === "spaceBetween" ? " between" : ""));
-      kids().forEach(n => d.appendChild(n)); return d;
-    }
-    case "Text": {
-      const t = el("div", "a2text");
-      const hint = String(props.usageHint || "body").toLowerCase();
-      if (["h1", "h2", "h3", "h4", "h5", "h6"].includes(hint)) t.classList.add("a2-" + hint);
-      else if (hint === "caption") t.classList.add("a2-caption");
-      t.textContent = boundStr(props.text);
-      return t;
-    }
-    case "Divider":
-      return el("hr", "a2divider");
-    case "Image": {
-      const src = boundStr(props.url || props.src);
-      if (!/^https?:\/\//i.test(src)) return null;   // only allow safe URLs
-      const img = el("img", "a2img"); img.src = src; img.alt = boundStr(props.alt) || ""; return img;
-    }
-    case "Icon": {
-      const s = el("span", "material-symbols-outlined"); s.textContent = iconName(boundStr(props.name) || props.name); return s;
-    }
-    default:
-      return null;   // unknown component -> skipped (text fallback covers content)
+  if (c.Card) {
+    const d = el("div", "a2card");
+    for (const cid of childIds(c.Card)) { const child = renderTree(cid, byId); if (child) d.appendChild(child); }
+    return d;
   }
+  if (c.Column) {
+    const d = el("div", "a2col");
+    for (const cid of childIds(c.Column)) { const child = renderTree(cid, byId); if (child) d.appendChild(child); }
+    return d;
+  }
+  if (c.Row) {
+    const d = el("div", "a2row");
+    for (const cid of childIds(c.Row)) { const child = renderTree(cid, byId); if (child) d.appendChild(child); }
+    return d;
+  }
+  if (c.Text) {
+    const t = el("p", "a2text");
+    const hint = (c.Text.usageHint || "").toLowerCase();
+    if (hint) t.classList.add("a2-" + hint);
+    t.textContent = boundStr(c.Text.text);
+    return t;
+  }
+  if (c.Divider) return el("hr", "a2divider");
+  if (c.Image) {
+    const url = boundStr(c.Image.url);
+    if (/^https?:\/\//i.test(url)) {
+      const img = el("img", "a2img");
+      img.src = url;
+      img.alt = boundStr(c.Image.alt) || "Dish";
+      return img;
+    }
+    return null;
+  }
+  if (c.Icon) {
+    const name = boundStr(c.Icon.name);
+    return el("span", "material-symbols-outlined", name);
+  }
+  return null;
 }
 
-// Render one or more A2UI messages (beginRendering + surfaceUpdate) into `container`.
-// Returns true if anything was drawn.
 function renderSurface(messages, container) {
-  const comps = {};
-  const roots = [];
+  const byId = new Map();
+  let rootId = null;
   for (const m of messages) {
-    if (m.beginRendering && typeof m.beginRendering.root === "string") roots.push(m.beginRendering.root);
     const su = m.surfaceUpdate;
-    if (su && Array.isArray(su.components)) for (const c of su.components) if (c && c.id && c.component) comps[c.id] = c.component;
+    if (!su) continue;
+    if (Array.isArray(su.components)) for (const c of su.components) if (c && c.id) byId.set(c.id, c);
+    if (su.root) rootId = su.root;
   }
-  let rootIds = roots.filter(r => comps[r]);
-  if (rootIds.length === 0) {   // no valid root given -> infer un-referenced components
-    const referenced = new Set();
-    for (const id in comps) { const spec = comps[id]; childIds(spec[Object.keys(spec)[0]] || {}).forEach(c => referenced.add(c)); }
-    rootIds = Object.keys(comps).filter(id => !referenced.has(id));
-  }
-  let drew = false;
-  for (const rid of rootIds) { const node = buildNode(rid, comps, new Set()); if (node) { container.appendChild(node); drew = true; } }
-  return drew;
+  if (!rootId || !byId.has(rootId)) return false;
+  const dom = renderTree(rootId, byId);
+  if (!dom) return false;
+  container.appendChild(dom);
+  return true;
 }
 
-// Fallback: pull every Text value out of the messages as plain text.
 function flattenText(messages) {
   const out = [];
   for (const m of messages) {
@@ -166,7 +240,7 @@ function flattenText(messages) {
 }
 
 function renderReply(b, parts) {
-  b.textContent = "";   // clear the "…" placeholder
+  b.textContent = "";
   const texts = parts.filter(p => p && (p.kind === "text" || (!p.kind && p.text))).map(p => p.text || "");
   const a2ui = parts.filter(p => p && p.kind === "a2ui" && p.data).map(p => p.data);
 
@@ -181,7 +255,6 @@ function renderReply(b, parts) {
   log.scrollTop = log.scrollHeight;
 }
 
-// The proxy returns { parts: [{kind:"text",text} | {kind:"a2ui",data}] }.
 form.addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const text = input.value.trim();
@@ -191,9 +264,6 @@ form.addEventListener("submit", async (ev) => {
   const b = bubble("agent"); b.textContent = "…";
   try {
     const res = await fetch("/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: text }) });
-    // Read as text first, then parse. If the proxy ever returns a non-JSON error
-    // page (e.g. a plain "Internal Server Error"), show that body instead of a
-    // cryptic "Unexpected token" JSON error.
     const raw = await res.text();
     let data;
     try { data = JSON.parse(raw); }
